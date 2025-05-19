@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <title>Бюджет</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #121212;
+      color: white;
+      text-align: center;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h2 {
+      margin: 20px 0 10px;
+    }
+
+    input {
+      padding: 12px;
+      font-size: 16px;
+      width: 80%;
+      max-width: 300px;
+      border: 2px solid white;
+      background: #000;
+      color: white;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      box-sizing: border-box;
+    }
+
+    button {
+      width: 80%;
+      max-width: 300px;
+      padding: 12px;
+      background-color: #000;
+      color: white;
+      border: 2px solid white;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 6px 12px rgba(255, 255, 255, 0.1);
+    }
+
+    button:hover {
+      background-color: #1a1a1a;
+      transform: translateY(-3px);
+      box-shadow: 0 10px 18px rgba(255, 255, 255, 0.2);
+    }
+
+    button:active {
+      transform: scale(0.97);
+      box-shadow: 0 4px 6px rgba(255, 255, 255, 0.2);
+    }
+
+    .budget-info {
+      margin-top: 20px;
+      font-size: 18px;
+    }
+
+    .expense-list {
+      margin-top: 20px;
+      text-align: left;
+      display: inline-block;
+      width: 80%;
+      max-width: 400px;
+    }
+
+    .expense-list li {
+      background: #1e1e1e;
+      padding: 10px;
+      margin: 6px 0;
+      border-radius: 8px;
+      border-left: 4px solid white;
+      font-size: 16px;
+    }
+    .menu {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            background: var(--menu-bg);
+            padding: 15px 0;
+            position: fixed;
+            bottom: 0;
+            height: 35px;
+            width: 100%;
+            border-top: 1px solid #333;
+        }
+
+        .menu a {
+            color: var(--text-light);
+            text-decoration: none;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        .menu a:hover {
+            color: #a2a2ff;
+        }
+
+        .menu-icon {
+            font-size: 24px;
+        }
+  </style>
+</head>
+<body>
+
+  <h2>Встановлення бюджету</h2>
+
+  <input type="number" id="budgetInput" placeholder="Введіть бюджет (₴)">
+  <br>
+  <button onclick="setBudget()">💾 Зберегти бюджет</button>
+
+  <div class="budget-info">
+    <p>Загальний бюджет: <span id="totalBudget">0</span> ₴</p>
+    <p>Залишок: <span id="remainingBudget">0</span> ₴</p>
+  </div>
+
+  <h2>Витрати</h2>
+  <ul class="expense-list" id="expenseList">
+    <li>🍔 Їжа: 250 ₴</li>
+    <li>🚌 Транспорт: 80 ₴</li>
+    <li>🎮 Розваги: 150 ₴</li>
+    <li>💡 Комунальні: 600 ₴</li>
+  </ul>
+
+  <script>
+    let totalBudget = 0;
+    let expenses = [250, 80, 150, 600];
+
+    function setBudget() {
+      totalBudget = parseFloat(document.getElementById("budgetInput").value);
+      if (isNaN(totalBudget) || totalBudget <= 0) {
+        alert("⚠️ Введіть коректну суму бюджету!");
+        return;
+      }
+      updateBudgetDisplay();
+    }
+
+    function updateBudgetDisplay() {
+      let spent = expenses.reduce((a, b) => a + b, 0);
+      let remaining = totalBudget - spent;
+      document.getElementById("totalBudget").textContent = totalBudget.toFixed(2);
+      document.getElementById("remainingBudget").textContent = remaining >= 0 ? remaining.toFixed(2) : 0;
+    }
+
+    updateBudgetDisplay();
+  </script>
+<div class="menu">
+        <a href="/" title="Головна"><span class="material-icons menu-icon">home</span></a>
+        <a href="add_spends" title="Витрати"><span class="material-icons menu-icon">add_circle</span></a>
+        <a href="stats_check" title="Статистика"><span class="material-icons menu-icon">bar_chart</span></a>
+        <a href="add_budget" title="Бюджет"><span class="material-icons menu-icon">account_balance_wallet</span></a>
+    </div>
+</body>
+</html>

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Додати витрату</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        body {
+            background-color: #121212;
+            color: white;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: #1e1e1e;
+            padding: 20px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+        }
+        select, input, button {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 5px;
+        }
+        select, input {
+            background: #2a2a2a;
+            color: white;
+            width:90%;
+        }
+        button {
+            background: #6200ea;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #3700b3;
+        }
+          .menu {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            background: var(--menu-bg);
+            padding: 15px 0;
+            position: fixed;
+            bottom: 0;
+            height: 35px;
+            width: 100%;
+            border-top: 1px solid #333;
+        }
+
+        .menu a {
+            color: var(--text-light);
+            text-decoration: none;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        .menu a:hover {
+            color: #a2a2ff;
+        }
+
+        .menu-icon {
+            font-size: 24px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Додати витрату</h2>
+        <label for="category">Категорія:</label>
+        <select id="category">
+            <option value="food">Їжа</option>
+            <option value="transport">Транспорт</option>
+            <option value="entertainment">Розваги</option>
+            <option value="shopping">Покупки</option>
+        </select>
+        <label for="amount">Сума:</label>
+        <input type="number" id="amount" placeholder="Введіть суму">
+        <label for="comment">Коментар:</label>
+        <input type="text" id="comment" placeholder="Додатковий коментар">
+        <button onclick="addExpense()">Додати</button>
+    </div>
+ <div class="menu">
+        <a href="/" title="Головна"><span class="material-icons menu-icon">home</span></a>
+        <a href="add_spends" title="Витрати"><span class="material-icons menu-icon">add_circle</span></a>
+        <a href="stats_check" title="Статистика"><span class="material-icons menu-icon">bar_chart</span></a>
+        <a href="add_budget" title="Бюджет"><span class="material-icons menu-icon">account_balance_wallet</span></a>
+    </div>
+</body>
+</html>

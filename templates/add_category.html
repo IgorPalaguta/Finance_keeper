@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Додати категорію</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        body {
+            background-color: #121212;
+            color: #ffffff;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            width: 90%;
+            max-width: 400px;
+            background: #1e1e1e;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 12px rgba(255, 255, 255, 0.1);
+        }
+        input {
+            width: 90%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 2px solid white;
+            border-radius: 8px;
+            background: #000;
+            color: white;
+            font-size: 16px;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 10px;
+            background-color: #000000;
+            color: #ffffff;
+            border: 2px solid #ffffff;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 6px 12px rgba(255, 255, 255, 0.1);
+        }
+        button:hover {
+            background-color: #1a1a1a;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 18px rgba(255, 255, 255, 0.2);
+        }
+        button:active {
+            transform: scale(0.97);
+            box-shadow: 0 4px 6px rgba(255, 255, 255, 0.2);
+        }
+      .menu {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            background: var(--menu-bg);
+            padding: 15px 0;
+            position: fixed;
+            bottom: 0;
+            height: 35px;
+            width: 100%;
+            border-top: 1px solid #333;
+        }
+
+        .menu a {
+            color: var(--text-light);
+            text-decoration: none;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        .menu a:hover {
+            color: #a2a2ff;
+        }
+
+        .menu-icon {
+            font-size: 24px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Додати категорію</h2>
+        <input type="text" placeholder="Введіть назву категорії" id="categoryName">
+        <button id="addCategory">➕ Додати</button>
+    </div>
+
+    <div class="menu">
+        <a href="/" title="Головна"><span class="material-icons menu-icon">home</span></a>
+        <a href="add_spends" title="Витрати"><span class="material-icons menu-icon">add_circle</span></a>
+        <a href="stats_check" title="Статистика"><span class="material-icons menu-icon">bar_chart</span></a>
+        <a href="add_budget" title="Бюджет"><span class="material-icons menu-icon">account_balance_wallet</span></a>
+    </div>
+
+    <script>
+        window.addEventListener("DOMContentLoaded", () => {
+            const tg = window.Telegram.WebApp;
+            tg.ready();
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const userId = urlParams.get("user_id");
+
+            if (!userId) {
+                alert("❌ Неможливо визначити user_id з параметрів URL");
+                return;
+            }
+
+            document.getElementById("addCategory").addEventListener("click", () => {
+                const category = document.getElementById("categoryName").value.trim();
+                if (!category) {
+                    alert("⚠️ Введіть назву категорії!");
+                    return;
+                }
+
+                fetch("/add_category", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ user_id: userId, category })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    alert(data.message);
+                    tg.close();
+                })
+                .catch(err => {
+                    console.error("❌ Помилка:", err);
+                    alert("⚠️ Сталася помилка при збереженні.");
+                });
+            });
+        });
+    </script>
+</body>
+</html>
