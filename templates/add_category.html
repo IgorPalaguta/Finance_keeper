@@ -106,42 +106,27 @@
         <a href="add_budget" title="Бюджет"><span class="material-icons menu-icon">account_balance_wallet</span></a>
     </div>
 
-    <script>
-        window.addEventListener("DOMContentLoaded", () => {
-            const tg = window.Telegram.WebApp;
-            tg.ready();
+   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script>
+    window.addEventListener("DOMContentLoaded", () => {
+        const tg = window.Telegram.WebApp;
+        tg.ready();
 
-            const urlParams = new URLSearchParams(window.location.search);
-            const userId = urlParams.get("user_id");
+        const userId = tg.initDataUnsafe?.user?.id;
 
-            if (!userId) {
-                alert("❌ Неможливо визначити user_id з параметрів URL");
-                return;
-            }
+        if (!userId) {
+            alert("❌ Неможливо визначити user_id через Telegram WebApp");
+            return;
+        }
 
-            document.getElementById("addCategory").addEventListener("click", () => {
-                const category = document.getElementById("categoryName").value.trim();
-                if (!category) {
-                    alert("⚠️ Введіть назву категорії!");
-                    return;
-                }
-
-                fetch("/add_category", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ user_id: userId, category })
-                })
-                .then(res => res.json())
-                .then(data => {
-                    alert(data.message);
-                    tg.close();
-                })
-                .catch(err => {
-                    console.error("❌ Помилка:", err);
-                    alert("⚠️ Сталася помилка при збереженні.");
-                });
-            });
+        // Далі передаємо userId у fetch POST-запит
+        fetch("/add_category", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ user_id: userId, category: "..." })
         });
-    </script>
+    });
+</script>
+
 </body>
 </html>
