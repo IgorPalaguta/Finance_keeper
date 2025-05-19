@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from flask import Flask, request, jsonify, render_template
 import pg8000
 import ssl
@@ -71,7 +73,50 @@ def add_category():
     except Exception as e:
         print("Помилка підключення:", e)
         return jsonify({"message": "❌ Помилка сервера!"}), 500
+@app.route('/get_categories')
+def get_categories():
+    user_id = request.args.get('user_id')
+    if not user_id:
+        return jsonify({"categories": []}), 400
 
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT name FROM categories WHERE user_id = %s", (int(user_id),))
+        categories = [row[0] for row in cursor.fetchall()]
+        conn.close()
+        return jsonify({"categories": categories})
+    except Exception as e:
+        print("Помилка при отриманні категорій:", e)
+        return jsonify({"categories": []}), 500
+
+
+# 📥 Додавання витрат
+@app.route('/add_expense', methods=['POST'])
+def add_expense():
+    data = request.json
+    user_id = data.get('user_id')
+    category = data.get('category')
+    amount = data.get('amount')
+    comment = data.get('comment', '')
+    date = datetime.now().strftime('%Y-%m-%d')
+
+    if not user_id or not category or not amount:
+        return jsonify({"message": "❌ Усі поля обов’язкові!"}), 400
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO expenses (user_id, amount, category, date) VALUES (%s, %s, %s, %s)",
+            (int(user_id), float(amount), category, date)
+        )
+        conn.commit()
+        conn.close()
+        return jsonify({"message": "✅ Витрату успішно додано!"})
+    except Exception as e:
+        print("Помилка при додаванні витрати:", e)
+        return jsonify({"message": "❌ Помилка сервера!"}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
