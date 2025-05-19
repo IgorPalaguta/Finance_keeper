@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Додати категорію</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
         body {
@@ -106,26 +107,44 @@
         <a href="add_budget" title="Бюджет"><span class="material-icons menu-icon">account_balance_wallet</span></a>
     </div>
 
-   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+   
 <script>
     window.addEventListener("DOMContentLoaded", () => {
-        const tg = window.Telegram.WebApp;
-        tg.ready();
+    const tg = window.Telegram.WebApp;
+    tg.ready();
 
-        const userId = tg.initDataUnsafe?.user?.id;
+    // Отримуємо user_id з Telegram WebApp API
+    const userId = tg.initDataUnsafe?.user?.id;
 
-        if (!userId) {
-            alert("❌ Неможливо визначити user_id через Telegram WebApp");
+    if (!userId) {
+        alert("❌ Неможливо отримати user_id з Telegram WebApp API");
+        return;
+    }
+
+    document.getElementById("addCategory").addEventListener("click", () => {
+        const category = document.getElementById("categoryName").value.trim();
+        if (!category) {
+            alert("⚠️ Введіть назву категорії!");
             return;
         }
 
-        // Далі передаємо userId у fetch POST-запит
         fetch("/add_category", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ user_id: userId, category: "..." })
+            body: JSON.stringify({ user_id: userId, category })
+        })
+        .then(res => res.json())
+        .then(data => {
+            alert(data.message);
+            tg.close();
+        })
+        .catch(err => {
+            console.error("❌ Помилка:", err);
+            alert("⚠️ Сталася помилка при збереженні.");
         });
     });
+});
+
 </script>
 
 </body>
