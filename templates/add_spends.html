@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Додати витрату</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body {
             background-color: #121212;
@@ -26,7 +27,7 @@
             text-align: center;
         }
         select, input, button {
-            width: 100%;
+            width: 90%;
             padding: 10px;
             margin: 10px 0;
             border: none;
@@ -35,21 +36,27 @@
         select, input {
             background: #2a2a2a;
             color: white;
-            width:90%;
         }
         button {
-            background: #6200ea;
+            background: #000000;
             color: white;
             cursor: pointer;
+            border: 2px solid white;
+            border-radius: 10px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 6px 12px rgba(255, 255, 255, 0.1);
         }
         button:hover {
-            background: #3700b3;
+            background-color: #1a1a1a;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 18px rgba(255, 255, 255, 0.2);
         }
-          .menu {
+        .menu {
             display: flex;
             justify-content: space-around;
             align-items: center;
-            background: var(--menu-bg);
+            background: #1e1e1e;
             padding: 15px 0;
             position: fixed;
             bottom: 0;
@@ -57,9 +64,8 @@
             width: 100%;
             border-top: 1px solid #333;
         }
-
         .menu a {
-            color: var(--text-light);
+            color: white;
             text-decoration: none;
             font-size: 24px;
             display: flex;
@@ -67,11 +73,9 @@
             justify-content: center;
             flex-direction: column;
         }
-
         .menu a:hover {
             color: #a2a2ff;
         }
-
         .menu-icon {
             font-size: 24px;
         }
@@ -81,19 +85,65 @@
     <div class="container">
         <h2>Додати витрату</h2>
         <label for="category">Категорія:</label>
-        <select id="category">
-            <option value="food">Їжа</option>
-            <option value="transport">Транспорт</option>
-            <option value="entertainment">Розваги</option>
-            <option value="shopping">Покупки</option>
-        </select>
+        <select id="category"></select>
+
         <label for="amount">Сума:</label>
         <input type="number" id="amount" placeholder="Введіть суму">
+
         <label for="comment">Коментар:</label>
         <input type="text" id="comment" placeholder="Додатковий коментар">
+
         <button onclick="addExpense()">Додати</button>
     </div>
- <div class="menu">
+
+    <div class="menu">
+        <a href="/" title="Головна"><span class="material-icons menu-icon">home</span></a>
+        <a href="add_spends" title="Витрати"><span class="material-icons menu-icon">add_circle</span></a>
+        <a href="stats_check" title="Статистика"><span class="material-icons menu-icon">bar_chart</span></a>
+        <a href="add_budget" title="Бюджет"><span class="material-icons menu-icon">account_balance_wallet</span></a>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        const userId = tg.initDataUnsafe?.user?.id;
+
+        if (!userId) {
+            alert("❌ Неможливо визначити user_id з Telegram WebApp");
+        } else {
+            // Завантажити категорії для користувача
+            fetch(`/get_categories?user_id=${userId}`)
+                .then(res => res.json())
+                .then(data => {
+                    const select = document.getElementById("category");
+                    select.innerHTML = "";
+                    data.categories.forEach(cat => {
+                        const option = document.createElement("option");
+                        option.value = cat;
+                        option.textContent = cat;
+                        select.appendChild(option);
+                    });
+                });
+        }
+
+        function addExpense() {
+            const category = document.getElementById("category").value;
+            const amount = document.getElementById("amount").value;
+            const comment = document.getElementById("comment").value;
+
+            if (!category || !amount) return alert("⚠️ Введіть усі обов'язкові поля!");
+
+            fetch("/add_expense", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ user_id: userId, category, amount, comment })
+            })
+            .then(res => res.json())
+            .then(data => alert(data.message))
+            .catch(err => alert("❌ Помилка при збереженні витрати"));
+        }
+    </script>
+<div class="menu">
         <a href="/" title="Головна"><span class="material-icons menu-icon">home</span></a>
         <a href="add_spends" title="Витрати"><span class="material-icons menu-icon">add_circle</span></a>
         <a href="stats_check" title="Статистика"><span class="material-icons menu-icon">bar_chart</span></a>
