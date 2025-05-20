@@ -107,16 +107,66 @@ def add_expense():
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
+
+        # 1. Додати витрату
         cursor.execute(
             "INSERT INTO expenses (user_id, amount, category, date) VALUES (%s, %s, %s, %s)",
             (int(user_id), float(amount), category, date)
         )
+
+        # 2. Зменшити бюджет
+        cursor.execute(
+            "UPDATE budgets SET amount = amount - %s WHERE user_id = %s",
+            (float(amount), int(user_id))
+        )
+
         conn.commit()
         conn.close()
-        return jsonify({"message": "✅ Витрату успішно додано!"})
+        return jsonify({"message": "✅ Витрату успішно додано та бюджет оновлено!"})
+
     except Exception as e:
         print("Помилка при додаванні витрати:", e)
         return jsonify({"message": "❌ Помилка сервера!"}), 500
+
+@app.route("/set_budget", methods=["POST"])
+def set_budget():
+    data = request.json
+    user_id = data.get("user_id")
+    amount = data.get("amount")
+    if not user_id or not amount:
+        return jsonify({"message": "❌ Не передано user_id або суму"}), 400
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO budgets (user_id, amount) VALUES (%s, %s) "
+            "ON CONFLICT(user_id) DO UPDATE SET amount = EXCLUDED.amount",
+            (int(user_id), float(amount))
+        )
+        conn.commit()
+        conn.close()
+        return jsonify({"message": "✅ Бюджет збережено"})
+    except Exception as e:
+        print("❌ Бюджет помилка:", e)
+        return jsonify({"message": "❌ Серверна помилка"}), 500
+
+@app.route("/get_budget")
+def get_budget():
+    user_id = request.args.get("user_id")
+    if not user_id:
+        return jsonify({"budget": 0}), 400
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT amount FROM budgets WHERE user_id = %s", (int(user_id),))
+        row = cursor.fetchone()
+        conn.close()
+        return jsonify({"budget": row[0] if row else 0})
+    except Exception as e:
+        print("❌ Бюджет отримання:", e)
+        return jsonify({"budget": 0}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
