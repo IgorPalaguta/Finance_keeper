@@ -136,64 +136,82 @@
   </ul>
 
   <script>
-    window.addEventListener("DOMContentLoaded", () => {
-      const tg = window.Telegram.WebApp;
-      tg.ready();
+window.addEventListener("DOMContentLoaded", () => {
+  const tg = window.Telegram.WebApp;
+  tg.ready();
 
-      const userId = tg.initDataUnsafe?.user?.id;
+  const userId = tg.initDataUnsafe?.user?.id;
+  if (!userId) {
+    alert("❌ Не вдалося отримати user_id");
+    return;
+  }
 
-      if (!userId) {
-        alert("❌ Не вдалося отримати user_id");
-        return;
-      }
+  let totalBudget = 0;
+  let expenses = [];
 
-      let totalBudget = 0;
-      const expenses = [250, 80, 150, 600];
+  function fetchBudget() {
+    fetch(`/get_budget?user_id=${userId}`)
+      .then(res => res.json())
+      .then(data => {
+        totalBudget = parseFloat(data.budget);
+        updateBudgetDisplay();
+      });
+  }
 
-      function fetchBudget() {
-        fetch(`/get_budget?user_id=${userId}`)
-          .then(res => res.json())
-          .then(data => {
-            totalBudget = parseFloat(data.budget);
-            updateBudgetDisplay();
-          });
-      }
+  function fetchExpenses() {
+    fetch(`/get_expenses?user_id=${userId}`)
+      .then(res => res.json())
+      .then(data => {
+        expenses = data.expenses.map(e => parseFloat(e.amount));
+        renderExpenses(data.expenses);
+        updateBudgetDisplay();
+      });
+  }
 
-      function updateBudgetDisplay() {
-        const spent = expenses.reduce((a, b) => a + b, 0);
-        const remaining = totalBudget - spent;
-        document.getElementById("totalBudget").textContent = totalBudget.toFixed(2);
-        document.getElementById("remainingBudget").textContent = remaining >= 0 ? remaining.toFixed(2) : "0";
-      }
+  function setBudget() {
+    const value = parseFloat(document.getElementById("budgetInput").value);
+    if (isNaN(value) || value <= 0) {
+      alert("⚠️ Введіть коректну суму бюджету!");
+      return;
+    }
 
-      function setBudget() {
-        const value = parseFloat(document.getElementById("budgetInput").value);
-        if (isNaN(value) || value <= 0) {
-          alert("⚠️ Введіть коректну суму бюджету!");
-          return;
-        }
-
-        fetch("/set_budget", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ user_id: userId, amount: value })
-        })
-        .then(res => res.json())
-        .then(data => {
-          alert(data.message);
-          totalBudget = value;
-          updateBudgetDisplay();
-        })
-        .catch(err => {
-          console.error("❌ Помилка сервера:", err);
-          alert("⚠️ Не вдалося зберегти бюджет");
-        });
-      }
-
-      document.getElementById("saveBudget").addEventListener("click", setBudget);
-      fetchBudget();
+    fetch("/set_budget", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user_id: userId, amount: value })
+    })
+    .then(res => res.json())
+    .then(data => {
+      alert(data.message);
+      totalBudget = value;
+      updateBudgetDisplay();
     });
-  </script>
+  }
+
+  function renderExpenses(data) {
+    const list = document.getElementById("expenseList");
+    list.innerHTML = "";
+    data.forEach(item => {
+      const li = document.createElement("li");
+      li.textContent = `${item.category}: ${item.amount} ₴`;
+      list.appendChild(li);
+    });
+  }
+
+  function updateBudgetDisplay() {
+    const spent = expenses.reduce((a, b) => a + b, 0);
+    const remaining = totalBudget - spent;
+    document.getElementById("totalBudget").textContent = totalBudget.toFixed(2);
+    document.getElementById("remainingBudget").textContent = remaining >= 0 ? remaining.toFixed(2) : "0";
+  }
+
+  document.getElementById("saveBudget").addEventListener("click", setBudget);
+
+  fetchBudget();
+  fetchExpenses();
+});
+</script>
+
 
   <div class="menu">
     <a href="/" title="Головна"><span class="material-icons menu-icon">home</span></a>
