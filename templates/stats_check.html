@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Статистика витрат</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-
   <style>
     :root {
       --bg: #121212;
@@ -27,9 +27,7 @@
       padding-bottom: 60px;
     }
 
-    h2 {
-      margin-top: 25px;
-    }
+    h2 { margin-top: 25px; }
 
     table {
       width: 90%;
@@ -45,9 +43,7 @@
       border: 1px solid var(--border);
     }
 
-    th {
-      background-color: #2a2a2a;
-    }
+    th { background-color: #2a2a2a; }
 
     .chart-container {
       width: 90%;
@@ -58,9 +54,7 @@
       box-shadow: 0 0 10px rgba(255, 255, 255, 0.05);
     }
 
-    canvas {
-      background: #181818;
-    }
+    canvas { background: #181818; }
 
     .menu {
       display: flex;
@@ -84,61 +78,21 @@
       align-items: center;
     }
 
-    .menu a:hover {
-      color: #a2a2ff;
-    }
-
-    .material-icons {
-      font-size: 24px;
-    }
-     .menu {
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            background: var(--menu-bg);
-            padding: 15px 0;
-            position: fixed;
-            bottom: 0;
-            height: 35px;
-            width: 100%;
-            border-top: 1px solid #333;
-        }
-
-        .menu a {
-            color: var(--text-light);
-            text-decoration: none;
-            font-size: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-        }
-
-        .menu a:hover {
-            color: #a2a2ff;
-        }
-
-        .menu-icon {
-            font-size: 24px;
-        }
+    .menu a:hover { color: #a2a2ff; }
+    .material-icons { font-size: 24px; }
   </style>
 </head>
 <body>
-
-  <h2>📊 Статистика витрат за останні 7 днів</h2>
-
-  <table>
-    <tr>
-      <th>Дата</th>
-      <th>Категорія</th>
-      <th>Сума (₴)</th>
-    </tr>
-    <tr><td>26.02.2025</td><td>Їжа</td><td>250</td></tr>
-    <tr><td>26.02.2025</td><td>Транспорт</td><td>80</td></tr>
-    <tr><td>25.02.2025</td><td>Розваги</td><td>150</td></tr>
-    <tr><td>25.02.2025</td><td>Їжа</td><td>180</td></tr>
-    <tr><td>24.02.2025</td><td>Комунальні</td><td>600</td></tr>
-    <tr><td>24.02.2025</td><td>Їжа</td><td>230</td></tr>
+  <h2>📊 Статистика витрат</h2>
+  <table id="expenseTable">
+    <thead>
+      <tr>
+        <th>Дата</th>
+        <th>Категорія</th>
+        <th>Сума (₴)</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
   </table>
 
   <div class="chart-container">
@@ -159,45 +113,52 @@
   </div>
 
   <script>
-    const dailyExpenses = {
-      labels: ["24.02", "25.02", "26.02"],
-      data: [830, 330, 330]
-    };
+    const tg = window.Telegram.WebApp;
+    tg.ready();
+    const userId = tg.initDataUnsafe?.user?.id;
 
-    const categoryExpenses = {
-      labels: ["Їжа", "Транспорт", "Розваги", "Комунальні"],
-      data: [660, 80, 150, 600]
-    };
+    if (!userId) alert("❌ Не вдалося отримати user_id");
 
-    new Chart(document.getElementById("dailyChart"), {
-      type: "bar",
-      data: {
-        labels: dailyExpenses.labels,
-        datasets: [{
-          label: "Витрати (₴)",
-          data: dailyExpenses.data,
-          backgroundColor: [ "#ff6b6b", "#ff9f43", "#1e90ff" ]
-        }]
-      },
-      options: {
-        plugins: { legend: { display: false } },
-        scales: { y: { ticks: { color: "#fff" } }, x: { ticks: { color: "#fff" } } }
-      }
-    });
+    async function loadStats() {
+      const res = await fetch(`/get_expense_stats?user_id=${userId}`);
+      const data = await res.json();
+      const table = document.querySelector("#expenseTable tbody");
+      const byDate = {};
+      const byCategory = {};
+      table.innerHTML = "";
 
-    new Chart(document.getElementById("categoryChart"), {
-      type: "doughnut",
-      data: {
-        labels: categoryExpenses.labels,
-        datasets: [{
-          data: categoryExpenses.data,
-          backgroundColor: ["#ff6b6b", "#ff9f43", "#1e90ff", "#4caf50"]
-        }]
-      },
-      options: {
-        plugins: { legend: { labels: { color: "#fff" } } }
-      }
-    });
+      data.expenses.forEach(({ date, category, amount }) => {
+        table.innerHTML += `<tr><td>${date}</td><td>${category}</td><td>${amount}</td></tr>`;
+        byDate[date] = (byDate[date] || 0) + amount;
+        byCategory[category] = (byCategory[category] || 0) + amount;
+      });
+
+      drawChart("dailyChart", Object.keys(byDate), Object.values(byDate), "bar");
+      drawChart("categoryChart", Object.keys(byCategory), Object.values(byCategory), "doughnut");
+    }
+
+    function drawChart(id, labels, data, type) {
+      new Chart(document.getElementById(id), {
+        type,
+        data: {
+          labels,
+          datasets: [{
+            label: "Витрати (₴)",
+            data,
+            backgroundColor: ["#ff6b6b", "#ff9f43", "#1e90ff", "#4caf50"]
+          }]
+        },
+        options: {
+          plugins: { legend: { labels: { color: "#fff" } } },
+          scales: type === "bar" ? {
+            y: { ticks: { color: "#fff" } },
+            x: { ticks: { color: "#fff" } }
+          } : {}
+        }
+      });
+    }
+
+    loadStats();
   </script>
   <div class="menu">
         <a href="/" title="Головна"><span class="material-icons menu-icon">home</span></a>
