@@ -204,6 +204,25 @@ def get_budget():
     except Exception as e:
         print("❌ Бюджет отримання:", e)
         return jsonify({"budget": 0}), 500
+        
+@app.route('/get_expense_stats')
+def get_expense_stats():
+    user_id = request.args.get('user_id')
+    if not user_id:
+        return jsonify({"expenses": []})
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT date, category, amount FROM expenses
+        WHERE user_id = %s
+        ORDER BY date DESC
+    """, (int(user_id),))
+    rows = cursor.fetchall()
+    conn.close()
+
+    expenses = [{"date": r[0], "category": r[1], "amount": float(r[2])} for r in rows]
+    return jsonify({"expenses": expenses})
 
 if __name__ == '__main__':
     app.run(debug=True)
