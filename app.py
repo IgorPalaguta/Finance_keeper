@@ -159,17 +159,30 @@ def set_budget():
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
+
+        # 🔍 Перевірка наявності користувача
+        cursor.execute("SELECT id FROM users WHERE telegram_id = %s", (int(user_id),))
+        existing_user = cursor.fetchone()
+
+        # ➕ Додаємо, якщо такого користувача ще немає
+        if not existing_user:
+            cursor.execute("INSERT INTO users (telegram_id) VALUES (%s)", (int(user_id),))
+            conn.commit()
+
+        # 💾 Зберігаємо бюджет
         cursor.execute(
-            "INSERT INTO budgets (user_id, amount) VALUES (%s, %s) "
+            "INSERT INTO budgets (user_id, amount) VALUES ((SELECT id FROM users WHERE telegram_id = %s), %s) "
             "ON CONFLICT(user_id) DO UPDATE SET amount = EXCLUDED.amount",
             (int(user_id), float(amount))
         )
+
         conn.commit()
         conn.close()
         return jsonify({"message": "✅ Бюджет збережено"})
     except Exception as e:
         print("❌ Бюджет помилка:", e)
         return jsonify({"message": "❌ Серверна помилка"}), 500
+
 
 @app.route("/get_budget")
 def get_budget():
