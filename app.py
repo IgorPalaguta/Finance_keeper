@@ -151,33 +151,37 @@ def get_expenses():
 @app.route("/set_budget", methods=["POST"])
 def set_budget():
     data = request.json
-    user_id = data.get("user_id")
+    telegram_id = data.get("user_id")  # Це telegram_id користувача
     amount = data.get("amount")
-    if not user_id or not amount:
+
+    if not telegram_id or not amount:
         return jsonify({"message": "❌ Не передано user_id або суму"}), 400
 
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        # 🔍 Перевірка наявності користувача
-        cursor.execute("SELECT id FROM users WHERE telegram_id = %s", (int(user_id),))
-        existing_user = cursor.fetchone()
+        # 1. Перевірка чи існує користувач з таким telegram_id
+        cursor.execute("SELECT id FROM users WHERE telegram_id = %s", (int(telegram_id),))
+        result = cursor.fetchone()
 
-        # ➕ Додаємо, якщо такого користувача ще немає
-        if not existing_user:
-            cursor.execute("INSERT INTO users (telegram_id) VALUES (%s)", (int(user_id),))
-            conn.commit()
+        if result:
+            user_id = result[0]
+        else:
+            # Якщо не існує — додаємо користувача
+            cursor.execute("INSERT INTO users (telegram_id) VALUES (%s) RETURNING id", (int(telegram_id),))
+            user_id = cursor.fetchone()[0]
 
-        # 💾 Зберігаємо бюджет
-        cursor.execute(
-            "INSERT INTO budgets (user_id, amount) VALUES ((SELECT id FROM users WHERE telegram_id = %s), %s) "
-            "ON CONFLICT(user_id) DO UPDATE SET amount = EXCLUDED.amount",
-            (int(user_id), float(amount))
-        )
+        # 2. Вставка або оновлення бюджету
+        cursor.execute("""
+            INSERT INTO budgets (user_id, amount)
+            VALUES (%s, %s)
+            ON CONFLICT (user_id) DO UPDATE SET amount = EXCLUDED.amount
+        """, (user_id, float(amount)))
 
         conn.commit()
         conn.close()
+
         return jsonify({"message": "✅ Бюджет збережено"})
     except Exception as e:
         print("❌ Бюджет помилка:", e)
