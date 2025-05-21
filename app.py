@@ -127,7 +127,27 @@ def add_expense():
     except Exception as e:
         print("Помилка при додаванні витрати:", e)
         return jsonify({"message": "❌ Помилка сервера!"}), 500
+        
+@app.route("/get_expenses")
+def get_expenses():
+    user_id = request.args.get("user_id")
+    if not user_id:
+        return jsonify({"expenses": []}), 400
 
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT category, amount FROM expenses
+            WHERE user_id = %s ORDER BY date DESC LIMIT 10
+        """, (int(user_id),))
+        rows = cursor.fetchall()
+        conn.close()
+        return jsonify({"expenses": [{"category": r[0], "amount": r[1]} for r in rows]})
+    except Exception as e:
+        print("❌ Помилка отримання витрат:", e)
+        return jsonify({"expenses": []}), 500
+        
 @app.route("/set_budget", methods=["POST"])
 def set_budget():
     data = request.json
