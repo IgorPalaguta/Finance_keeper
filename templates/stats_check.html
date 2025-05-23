@@ -80,6 +80,44 @@
 
     .menu a:hover { color: #a2a2ff; }
     .material-icons { font-size: 24px; }
+    
+    .ai-advice-container {
+  width: 90%;
+  max-width: 600px;
+  margin: 30px auto;
+  background-color: #1e1e1e;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+  border-left: 5px solid #4caf50;
+  animation: fadeIn 1s ease-in-out;
+}
+
+.ai-advice-container h2 {
+  margin-top: 0;
+  color: #a2ffb5;
+  font-size: 22px;
+}
+
+.ai-advice-container ul {
+  list-style-type: decimal;
+  padding-left: 20px;
+  text-align: left;
+}
+
+.ai-advice-container li {
+  margin-bottom: 10px;
+  font-size: 16px;
+  line-height: 1.5;
+  color: #e0e0e0;
+}
+
+/* Анімація */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
   </style>
 </head>
 <body>
@@ -159,7 +197,28 @@
     }
 
     loadStats();
+    
+    if (userId) {
+    fetch(`/ai_advice?user_id=${userId}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.advice) {
+          const adviceList = data.advice.split('\n').filter(l => l.trim().startsWith('1.') || l.trim().startsWith('2.') || l.trim().startsWith('3.'));
+          const adviceContainer = document.getElementById('adviceList');
+          adviceList.forEach(item => {
+            const li = document.createElement('li');
+            li.textContent = item.replace(/^\d+\.\s*/, '');
+            adviceContainer.appendChild(li);
+          });
+        }
+      });
+  }
   </script>
+  <div class="ai-advice-container" id="aiAdvice">
+  <h2>🤖 Поради від ШІ</h2>
+  <ul id="adviceList"></ul>
+</div>
+
   <div class="menu">
         <a href="/" title="Головна"><span class="material-icons menu-icon">home</span></a>
         <a href="add_spends" title="Витрати"><span class="material-icons menu-icon">add_circle</span></a>
