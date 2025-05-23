@@ -15,7 +15,7 @@ DB_CONFIG = {
     "database": "finance_bot",
     "ssl_context": ssl.create_default_context()
 }
-
+openai.api_key = "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"
 # 🔌 Функція підключення до бази PostgreSQL
 def get_db_connection():
     conn = pg8000.connect(**DB_CONFIG)
@@ -243,26 +243,32 @@ def ai_advice():
     rows = cursor.fetchall()
     conn.close()
 
-    expense_summary = "\n".join([f"{r[0]}: {float(r[1]):.2f} грн" for r in rows])
+    if not rows:
+        return jsonify({"advice": "ℹ️ Немає даних для аналізу."})
+
+    expense_summary = [{"category": row[0], "total": float(row[1])} for row in rows]
 
     prompt = f"""
-    Користувач витратив за останні 30 днів:
+    Проаналізуй наступні витрати користувача за останній місяць та надай 3 поради, як покращити його фінансову поведінку:
+
     {expense_summary}
 
-    Сформуй 3 поради для покращення фінансової грамотності та зменшення непотрібних витрат.
+    Формат відповіді: 
+    1. ...
+    2. ...
+    3. ...
     """
 
     try:
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.7
+            messages=[{"role": "user", "content": prompt}]
         )
-        advice_text = response.choices[0].message.content
-        return jsonify({"advice": advice_text})
+        advice = response.choices[0].message["content"]
+        return jsonify({"advice": advice})
     except Exception as e:
-        print("❌ OpenAI API error:", e)
-        return jsonify({"advice": "❌ Не вдалося отримати пораду від ШІ."})
+        print("❌ GPT Error:", e)
+        return jsonify({"advice": "❌ Помилка отримання поради від AI."})
 
 if __name__ == '__main__':
     app.run(debug=True)
