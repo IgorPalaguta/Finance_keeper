@@ -4,6 +4,7 @@ from flask import Flask, request, jsonify, render_template
 import os 
 import pg8000
 import openai
+from openai import OpenAI
 import ssl
 
 app = Flask(__name__)
