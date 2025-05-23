@@ -15,7 +15,7 @@ DB_CONFIG = {
     "database": "finance_bot",
     "ssl_context": ssl.create_default_context()
 }
-openai.api_key = "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"
+openai.api_key = os.environ.get("OPENAI_API_KEY")
 # 🔌 Функція підключення до бази PostgreSQL
 def get_db_connection():
     conn = pg8000.connect(**DB_CONFIG)
