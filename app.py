@@ -2,6 +2,7 @@ from datetime import datetime
 
 from flask import Flask, request, jsonify, render_template
 import pg8000
+import openai
 import ssl
 
 app = Flask(__name__)
@@ -223,6 +224,45 @@ def get_expense_stats():
 
     expenses = [{"date": r[0], "category": r[1], "amount": float(r[2])} for r in rows]
     return jsonify({"expenses": expenses})
+
+@app.route('/ai_advice')
+def ai_advice():
+    user_id = request.args.get('user_id')
+    if not user_id:
+        return jsonify({"advice": "❌ user_id не передано"})
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT category, SUM(amount) as total
+        FROM expenses
+        WHERE user_id = %s AND date >= CURRENT_DATE - INTERVAL '30 days'
+        GROUP BY category
+        ORDER BY total DESC
+    """, (int(user_id),))
+    rows = cursor.fetchall()
+    conn.close()
+
+    expense_summary = "\n".join([f"{r[0]}: {float(r[1]):.2f} грн" for r in rows])
+
+    prompt = f"""
+    Користувач витратив за останні 30 днів:
+    {expense_summary}
+
+    Сформуй 3 поради для покращення фінансової грамотності та зменшення непотрібних витрат.
+    """
+
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.7
+        )
+        advice_text = response.choices[0].message.content
+        return jsonify({"advice": advice_text})
+    except Exception as e:
+        print("❌ OpenAI API error:", e)
+        return jsonify({"advice": "❌ Не вдалося отримати пораду від ШІ."})
 
 if __name__ == '__main__':
     app.run(debug=True)
