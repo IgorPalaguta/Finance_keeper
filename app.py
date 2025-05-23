@@ -264,12 +264,12 @@ def ai_advice():
         """
 
         client = OpenAI(
-            api_key=os.environ.get("OPENROUTER_API_KEY"),
-            base_url="https://openrouter.ai/api/v1"
+           api_key=os.environ.get("GROQ_API_KEY"),
+    base_url="https://api.groq.com/openai/v1"
         )
 
         chat_completion = client.chat.completions.create(
-            model="meta-llama/llama-3-8b-instruct",
+            model="meta-llama/llama-4-scout-17b-16e-instruct",
             messages=[{"role": "user", "content": prompt}]
         )
 
