@@ -17,7 +17,9 @@ DB_CONFIG = {
     "database": "finance_bot",
     "ssl_context": ssl.create_default_context()
 }
-client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+openai.api_key = os.environ.get("OPENROUTER_API_KEY")
+openai.api_base = "https://openrouter.ai/api/v1"
+
 # 🔌 Функція підключення до бази PostgreSQL
 def get_db_connection():
     conn = pg8000.connect(**DB_CONFIG)
@@ -235,35 +237,39 @@ def ai_advice():
         return jsonify({"advice": "❌ user_id не передано"})
 
     try:
+        # 1. Отримуємо витрати користувача
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("""
             SELECT category, SUM(amount) as total
             FROM expenses
-            WHERE user_id = %s AND date >= CURRENT_DATE - INTERVAL '30 days'::interval
+            WHERE user_id = %s AND date >= CURRENT_DATE - INTERVAL '30 days'
             GROUP BY category
             ORDER BY total DESC
         """, (int(user_id),))
         rows = cursor.fetchall()
         conn.close()
 
-        expense_summary = "\n".join([f"{r[0]}: {r[1]} грн" for r in rows])
+        if not rows:
+            return jsonify({"advice": "ℹ️ Немає витрат для аналізу."})
 
+        # 2. Формуємо текст витрат
+        expense_summary = "\n".join([f"{row[0]}: {row[1]} ₴" for row in rows])
+
+        # 3. Формуємо запит
         prompt = f"""
-Проаналізуй наступні витрати користувача за останній місяць та надай 3 поради, як покращити його фінансову поведінку:
-
+Проаналізуй витрати користувача за останній місяць і запропонуй 3 поради щодо покращення його фінансової поведінки. Ось дані:
 {expense_summary}
 
 Формат відповіді:
 1. ...
 2. ...
 3. ...
-"""
+        """
 
-        client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
-
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+        # 4. Запит до LLaMA 3.3 через OpenRouter
+        response = openai.ChatCompletion.create(
+            model="meta-llama/llama-3-8b-instruct",
             messages=[{"role": "user", "content": prompt}]
         )
 
@@ -272,7 +278,7 @@ def ai_advice():
 
     except Exception as e:
         print("❌ GPT Error:", e)
-        return jsonify({"advice": "❌ Помилка генерації порад ШІ."}), 500
+        return jsonify({"advice": "⚠️ Не вдалося отримати пораду."})
 
 if __name__ == '__main__':
     app.run(debug=True)
