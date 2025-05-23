@@ -226,51 +226,52 @@ def get_expense_stats():
     expenses = [{"date": r[0], "category": r[1], "amount": float(r[2])} for r in rows]
     return jsonify({"expenses": expenses})
 
+
 @app.route('/ai_advice')
 def ai_advice():
     user_id = request.args.get('user_id')
     if not user_id:
         return jsonify({"advice": "❌ user_id не передано"})
 
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT category, SUM(amount) as total
-        FROM expenses
-        WHERE user_id = %s AND date >= CURRENT_DATE - INTERVAL '30 days'
-        GROUP BY category
-        ORDER BY total DESC
-    """, (int(user_id),))
-    rows = cursor.fetchall()
-    conn.close()
-
-    if not rows:
-        return jsonify({"advice": "ℹ️ Немає даних для аналізу."})
-
-    expense_summary = [{"category": row[0], "total": float(row[1])} for row in rows]
-
-    prompt = f"""
-    Проаналізуй наступні витрати користувача за останній місяць та надай 3 поради, як покращити його фінансову поведінку:
-
-    {expense_summary}
-
-    Формат відповіді: 
-    1. ...
-    2. ...
-    3. ...
-    """
-
     try:
-        response = client.chat.completions.create(
-    model="gpt-3.5-turbo",
-    messages=[{"role": "user", "content": prompt}]
-)
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT category, SUM(amount) as total
+            FROM expenses
+            WHERE user_id = %s AND date >= CURRENT_DATE - INTERVAL '30 days'::interval
+            GROUP BY category
+            ORDER BY total DESC
+        """, (int(user_id),))
+        rows = cursor.fetchall()
+        conn.close()
 
-advice = response.choices[0].message.content
+        expense_summary = "\n".join([f"{r[0]}: {r[1]} грн" for r in rows])
+
+        prompt = f"""
+Проаналізуй наступні витрати користувача за останній місяць та надай 3 поради, як покращити його фінансову поведінку:
+
+{expense_summary}
+
+Формат відповіді:
+1. ...
+2. ...
+3. ...
+"""
+
+        client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": prompt}]
+        )
+
+        advice = response.choices[0].message.content
         return jsonify({"advice": advice})
+
     except Exception as e:
         print("❌ GPT Error:", e)
-        return jsonify({"advice": "❌ Помилка отримання поради від AI."})
+        return jsonify({"advice": "❌ Помилка генерації порад ШІ."}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
