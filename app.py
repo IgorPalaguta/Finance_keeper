@@ -16,7 +16,7 @@ DB_CONFIG = {
     "database": "finance_bot",
     "ssl_context": ssl.create_default_context()
 }
-openai.api_key = os.environ.get("OPENAI_API_KEY")
+client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 # 🔌 Функція підключення до бази PostgreSQL
 def get_db_connection():
     conn = pg8000.connect(**DB_CONFIG)
@@ -261,11 +261,12 @@ def ai_advice():
     """
 
     try:
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": prompt}]
-        )
-        advice = response.choices[0].message["content"]
+        response = client.chat.completions.create(
+    model="gpt-3.5-turbo",
+    messages=[{"role": "user", "content": prompt}]
+)
+
+advice = response.choices[0].message.content
         return jsonify({"advice": advice})
     except Exception as e:
         print("❌ GPT Error:", e)
