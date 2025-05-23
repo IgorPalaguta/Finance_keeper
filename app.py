@@ -17,8 +17,7 @@ DB_CONFIG = {
     "database": "finance_bot",
     "ssl_context": ssl.create_default_context()
 }
-openai.api_key = os.environ.get("OPENROUTER_API_KEY")
-openai.api_base = "https://openrouter.ai/api/v1"
+
 
 # 🔌 Функція підключення до бази PostgreSQL
 def get_db_connection():
@@ -237,7 +236,6 @@ def ai_advice():
         return jsonify({"advice": "❌ user_id не передано"})
 
     try:
-        # 1. Отримуємо витрати користувача
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("""
@@ -253,10 +251,8 @@ def ai_advice():
         if not rows:
             return jsonify({"advice": "ℹ️ Немає витрат для аналізу."})
 
-        # 2. Формуємо текст витрат
         expense_summary = "\n".join([f"{row[0]}: {row[1]} ₴" for row in rows])
 
-        # 3. Формуємо запит
         prompt = f"""
 Проаналізуй витрати користувача за останній місяць і запропонуй 3 поради щодо покращення його фінансової поведінки. Ось дані:
 {expense_summary}
@@ -267,18 +263,23 @@ def ai_advice():
 3. ...
         """
 
-        # 4. Запит до LLaMA 3.3 через OpenRouter
-        response = openai.ChatCompletion.create(
+        client = OpenAI(
+            api_key=os.environ.get("OPENROUTER_API_KEY"),
+            base_url="https://openrouter.ai/api/v1"
+        )
+
+        chat_completion = client.chat.completions.create(
             model="meta-llama/llama-3-8b-instruct",
             messages=[{"role": "user", "content": prompt}]
         )
 
-        advice = response.choices[0].message.content
+        advice = chat_completion.choices[0].message.content
         return jsonify({"advice": advice})
 
     except Exception as e:
         print("❌ GPT Error:", e)
         return jsonify({"advice": "⚠️ Не вдалося отримати пораду."})
+
 
 if __name__ == '__main__':
     app.run(debug=True)
