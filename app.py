@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from flask import Flask, request, jsonify, render_template
+import os 
 import pg8000
 import openai
 import ssl
